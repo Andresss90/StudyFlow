@@ -1241,7 +1241,7 @@ export default function App() {
       <button
         type="button"
         onClick={openMonthPicker}
-        className="flex items-center gap-1.5 text-2xl font-bold text-slate-900 capitalize"
+        className="flex items-center gap-1.5 text-3xl md:text-2xl font-bold text-slate-900 capitalize"
       >
         {monthName}
         <ChevronDownIcon />
@@ -1404,7 +1404,7 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 md:p-8 pt-[calc(1.25rem+env(safe-area-inset-top))] md:pt-8">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 md:p-8 pt-[calc(0.5rem+env(safe-area-inset-top))] md:pt-8">
       {updateAvailable && (
         <div className="fixed bottom-4 inset-x-4 md:inset-x-auto md:right-6 md:left-auto md:w-80 bg-slate-900 text-white rounded-lg shadow-2xl p-4 z-[60] flex items-center justify-between gap-3">
           <span className="text-sm font-semibold">A new version is ready.</span>
