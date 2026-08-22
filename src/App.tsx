@@ -1295,7 +1295,7 @@ export default function App() {
       <button
         type="button"
         onClick={() => setShowUserMenu(v => !v)}
-        className="w-[54px] h-[54px] md:w-9 md:h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition shrink-0"
+        className="w-[54px] h-[54px] md:w-9 md:h-9 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-600 transition shrink-0"
         title={userProfile.name}
       >
         <UserIcon className="w-6 h-6 md:w-5 md:h-5" />
