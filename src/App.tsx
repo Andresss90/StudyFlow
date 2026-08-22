@@ -98,8 +98,8 @@ const ArrowLeftIcon = () => (
   </svg>
 );
 
-const UserIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+const UserIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   </svg>
 );
@@ -1295,10 +1295,10 @@ export default function App() {
       <button
         type="button"
         onClick={() => setShowUserMenu(v => !v)}
-        className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition shrink-0"
+        className="w-[54px] h-[54px] md:w-9 md:h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition shrink-0"
         title={userProfile.name}
       >
-        <UserIcon />
+        <UserIcon className="w-6 h-6 md:w-5 md:h-5" />
       </button>
       {showUserMenu && (
         <>
@@ -1379,15 +1379,15 @@ export default function App() {
       className="flex items-center gap-2 px-2 py-1 rounded-md text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
       title="Show or hide academic cycles on the calendar"
     >
-      <span className={`w-9 h-5 rounded-full p-0.5 flex items-center transition-colors ${showCycles ? 'bg-indigo-600 justify-end' : 'bg-slate-300 justify-start'}`}>
-        <span className="w-4 h-4 bg-white rounded-full shadow-sm" />
+      <span className={`w-10 h-6 rounded-full p-0.5 flex items-center transition-colors ${showCycles ? 'bg-indigo-600 justify-end' : 'bg-slate-300 justify-start'}`}>
+        <span className="w-5 h-5 bg-white rounded-full shadow-sm" />
       </span>
       <span className="hidden sm:inline">Cycles</span>
     </button>
   );
 
   const tabsGroupControl = (
-    <div className="flex items-center bg-slate-100 p-1 rounded-full border border-slate-200">
+    <div className="flex items-center bg-slate-100 p-1 rounded-full border border-slate-200 -mt-1.5 md:mt-0">
       <button onClick={() => { setActiveTab('calendar'); setSelectedDayDetails(null); }} className={`flex items-center justify-center gap-2 px-3.5 py-2.5 md:px-3.5 md:py-1.5 rounded-full text-xs md:text-sm font-semibold transition ${activeTab === 'calendar' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
         <CalendarIcon className="w-6 h-6 md:w-4 md:h-4" />
         <span className="hidden md:inline">Calendar</span>
