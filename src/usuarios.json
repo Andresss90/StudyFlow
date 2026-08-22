@@ -1266,7 +1266,7 @@
   {
     "email": "antonio.moreno.est@gcrb.edu.co",
     "name": "Antonio Moreno",
-    "role": "student",
+    "role": "representative",
     "courseId": "11A",
     "courses": []
   },
@@ -1364,7 +1364,7 @@
   {
     "email": "salome.bolivar.est@gcrb.edu.co",
     "name": "Salomé Bolívar",
-    "role": "student",
+    "role": "representative",
     "courseId": "11B",
     "courses": []
   },
@@ -1560,7 +1560,7 @@
   {
     "email": "sara.guerrero.est@gcrb.edu.co",
     "name": "Sara Guerrero",
-    "role": "student",
+    "role": "representative",
     "courseId": "11C",
     "courses": []
   },
@@ -1721,7 +1721,7 @@
   {
     "email": "juliana.rojas.est@gcrb.edu.co",
     "name": "Juliana Rojas",
-    "role": "student",
+    "role": "representative",
     "courseId": "11D",
     "courses": []
   },
