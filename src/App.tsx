@@ -1241,7 +1241,7 @@ export default function App() {
       <button
         type="button"
         onClick={openMonthPicker}
-        className="flex items-center gap-1.5 text-xl md:text-2xl font-bold text-slate-900 capitalize"
+        className="flex items-center gap-1.5 text-2xl font-bold text-slate-900 capitalize"
       >
         {monthName}
         <ChevronDownIcon />
@@ -1367,7 +1367,7 @@ export default function App() {
           )}
         </>
       ) : (
-        <span className="px-2.5 py-1.5 text-xs font-bold text-slate-500">{userProfile.courseId}</span>
+        <span className="hidden md:inline-block px-2.5 py-1.5 text-xs font-bold text-slate-500">{userProfile.courseId}</span>
       )}
     </div>
   );
@@ -1417,7 +1417,7 @@ export default function App() {
           </button>
         </div>
       )}
-      <header className="max-w-7xl mx-auto mb-6 bg-white p-4 md:p-5 rounded-lg border border-slate-200 shadow-sm">
+      <header className="max-w-7xl mx-auto mb-6 bg-transparent md:bg-white p-0 md:p-5 rounded-none md:rounded-lg border-0 md:border md:border-slate-200 shadow-none md:shadow-sm">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-4">
           <div className="flex justify-start">
             <div className="md:hidden">{cyclesToggleControl}</div>
