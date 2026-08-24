@@ -378,6 +378,15 @@ export default function App() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
+  // Aviso de "hay contenido nuevo": es solo un respaldo visual, ya que los
+  // datos se sincronizan solos en segundo plano (ver el intervalo de
+  // sincronización silenciosa más abajo). Guardamos los ids ya vistos de
+  // tareas/eventos del curso para detectar cuándo alguien más publicó algo.
+  const [newContentAvailable, setNewContentAvailable] = useState(false);
+  const knownSchoolTaskIdsRef = useRef<Set<string> | null>(null);
+  const knownSchoolEventIdsRef = useRef<Set<string> | null>(null);
+  const knownGeneralOverrideIdsRef = useRef<Set<string> | null>(null);
+
   const [activeTab, setActiveTab] = useState<'calendar' | 'tasks' | 'schedule'>('calendar');
   const [showCycles, setShowCycles] = useState<boolean>(() => localStorage.getItem('showCycles') === 'true');
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -480,17 +489,17 @@ export default function App() {
     }
   }, [userProfile, firebaseUser]);
 
-  // Refresca los datos solo cuando la pestaña/app vuelve a primer plano (no en
-  // cada parpadeo de visibilidad), para que quien deja la app abierta en
-  // segundo plano (típico en iOS, que nunca la "cierra" del todo) igual vea
-  // las tareas/eventos nuevos sin tener que cerrarla y volver a abrirla.
+  // Sincronización silenciosa: trae datos frescos y revisa si hay una versión
+  // nueva de la app, sin spinner ni interacción del usuario. Se dispara (a)
+  // cuando la pestaña/app vuelve a primer plano y (b) periódicamente mientras
+  // queda abierta en primer plano, para que las tareas/eventos nuevos y el
+  // aviso de "nueva versión" aparezcan solos, sin depender de que alguien
+  // cierre la app o toque el botón de refrescar.
   useEffect(() => {
     if (!userProfile || !firebaseUser) return;
     let lastRefresh = Date.now();
 
-    const handleResume = () => {
-      if (document.visibilityState !== 'visible') return;
-      if (Date.now() - lastRefresh < 15000) return;
+    const silentSync = () => {
       lastRefresh = Date.now();
       fetchSchoolTasks();
       fetchSchoolEvents();
@@ -501,13 +510,32 @@ export default function App() {
       swRegistrationRef.current?.update();
     };
 
+    const handleResume = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - lastRefresh < 15000) return;
+      silentSync();
+    };
+
     document.addEventListener('visibilitychange', handleResume);
     window.addEventListener('focus', handleResume);
+    const intervalId = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      silentSync();
+    }, 60000);
     return () => {
       document.removeEventListener('visibilitychange', handleResume);
       window.removeEventListener('focus', handleResume);
+      clearInterval(intervalId);
     };
   }, [userProfile, firebaseUser]);
+
+  // El aviso de contenido nuevo es solo un respaldo informativo (los datos ya
+  // se sincronizaron solos): se oculta solo a los pocos segundos.
+  useEffect(() => {
+    if (!newContentAvailable) return;
+    const timeoutId = setTimeout(() => setNewContentAvailable(false), 8000);
+    return () => clearTimeout(timeoutId);
+  }, [newContentAvailable]);
 
   const handleManualRefresh = async () => {
     if (!userProfile || !firebaseUser || isRefreshing) return;
@@ -655,6 +683,11 @@ export default function App() {
           tasks.push({ ...data, id: docSnap.id, isPersonal: false, isEvent: false });
         }
       });
+      const newIds = new Set(tasks.map(t => t.id));
+      if (knownSchoolTaskIdsRef.current && tasks.some(t => !knownSchoolTaskIdsRef.current!.has(t.id))) {
+        setNewContentAvailable(true);
+      }
+      knownSchoolTaskIdsRef.current = newIds;
       setSchoolTasks(tasks);
     } catch (err) {
       console.error('Error fetching school tasks:', err);
@@ -673,6 +706,11 @@ export default function App() {
           events.push({ ...data, id: docSnap.id, isEvent: true, isPersonal: false });
         }
       });
+      const newIds = new Set(events.map(e => e.id));
+      if (knownSchoolEventIdsRef.current && events.some(e => !knownSchoolEventIdsRef.current!.has(e.id))) {
+        setNewContentAvailable(true);
+      }
+      knownSchoolEventIdsRef.current = newIds;
       setSchoolEvents(events);
     } catch (err) {
       console.error('Error fetching school events:', err);
@@ -762,6 +800,11 @@ export default function App() {
           overrides[data.baseEventId] = data;
         }
       });
+      const newIds = new Set(Object.keys(overrides));
+      if (knownGeneralOverrideIdsRef.current && [...newIds].some(id => !knownGeneralOverrideIdsRef.current!.has(id))) {
+        setNewContentAvailable(true);
+      }
+      knownGeneralOverrideIdsRef.current = newIds;
       setGeneralEventOverrides(overrides);
     } catch (err) {
       console.error('Error fetching general event overrides:', err);
@@ -1236,6 +1279,12 @@ export default function App() {
     .filter((e): e is GeneralEventDefault & { isOverridden: boolean } => e !== null)
     .sort((a, b) => a.dateStr.localeCompare(b.dateStr));
 
+  // Listas para la vista de Tasks & Events: siempre ordenadas por fecha (la
+  // más cercana primero), sin control manual de orden.
+  const sortedPersonalToDos = [...personalToDos].sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+  const sortedSchoolTasks = [...schoolTasks].sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+  const sortedSchoolEvents = [...schoolEvents].sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+
   const monthPickerControl = (
     <div className="relative">
       <button
@@ -1405,16 +1454,32 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 md:p-8 pt-[calc(0.5rem+env(safe-area-inset-top))] md:pt-8">
-      {updateAvailable && (
-        <div className="fixed bottom-4 inset-x-4 md:inset-x-auto md:right-6 md:left-auto md:w-80 bg-slate-900 text-white rounded-lg shadow-2xl p-4 z-[60] flex items-center justify-between gap-3">
-          <span className="text-sm font-semibold">A new version is ready.</span>
-          <button
-            type="button"
-            onClick={applyUpdate}
-            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-md transition shrink-0"
-          >
-            Update now
-          </button>
+      {(updateAvailable || newContentAvailable) && (
+        <div className="fixed bottom-4 inset-x-4 md:inset-x-auto md:right-6 md:left-auto md:w-80 z-[60] flex flex-col gap-2">
+          {newContentAvailable && (
+            <div className="bg-slate-900 text-white rounded-lg shadow-2xl p-4 flex items-center justify-between gap-3">
+              <span className="text-sm font-semibold">There's new material available.</span>
+              <button
+                type="button"
+                onClick={() => { setNewContentAvailable(false); handleManualRefresh(); }}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-md transition shrink-0"
+              >
+                Refresh
+              </button>
+            </div>
+          )}
+          {updateAvailable && (
+            <div className="bg-slate-900 text-white rounded-lg shadow-2xl p-4 flex items-center justify-between gap-3">
+              <span className="text-sm font-semibold">A new version is ready.</span>
+              <button
+                type="button"
+                onClick={applyUpdate}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-md transition shrink-0"
+              >
+                Update now
+              </button>
+            </div>
+          )}
         </div>
       )}
       <header className="max-w-7xl mx-auto mb-6 bg-transparent md:bg-white p-0 md:p-5 rounded-none md:rounded-lg border-0 md:border md:border-slate-200 shadow-none md:shadow-sm">
@@ -1635,9 +1700,9 @@ export default function App() {
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">My Personal Tasks (To-Do List)</h3>
                 {renderInfoTip('personal', sectionInfoText.personal)}
               </div>
-              {personalToDos.length === 0 ? <p className="text-slate-400 text-sm py-2">No personal tasks registered.</p> : (
+              {sortedPersonalToDos.length === 0 ? <p className="text-slate-400 text-sm py-2">No personal tasks registered.</p> : (
                 <div className="space-y-2">
-                  {personalToDos.map(task => (
+                  {sortedPersonalToDos.map(task => (
                     <div key={task.id} className={`flex items-start justify-between p-3.5 rounded-md border transition ${task.color}`}>
                       <div className="flex items-start gap-3">
                         <input type="checkbox" checked={task.completed} onChange={() => togglePersonalToDo(task.id, task.completed)} className="w-5 h-5 mt-0.5 text-indigo-600 rounded cursor-pointer shrink-0" />
@@ -1664,9 +1729,9 @@ export default function App() {
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">School Tasks for Course ({activeCourse})</h3>
                 {renderInfoTip('schoolTasks', sectionInfoText.schoolTasks)}
               </div>
-              {schoolTasks.length === 0 ? <p className="text-slate-400 text-sm py-2">No school tasks published.</p> : (
+              {sortedSchoolTasks.length === 0 ? <p className="text-slate-400 text-sm py-2">No school tasks published.</p> : (
                 <div className="space-y-2">
-                  {schoolTasks.map(task => {
+                  {sortedSchoolTasks.map(task => {
                     const isDone = completedSchoolTaskIds.has(task.id);
                     return (
                       <div key={task.id} className={`flex items-start justify-between p-3.5 rounded-md border transition ${task.color}`}>
@@ -1696,9 +1761,9 @@ export default function App() {
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">School Events</h3>
                 {renderInfoTip('schoolEvents', sectionInfoText.schoolEvents)}
               </div>
-              {schoolEvents.length === 0 ? <p className="text-slate-400 text-sm py-2">No school events registered.</p> : (
+              {sortedSchoolEvents.length === 0 ? <p className="text-slate-400 text-sm py-2">No school events registered.</p> : (
                 <div className="space-y-2">
-                  {schoolEvents.map(event => (
+                  {sortedSchoolEvents.map(event => (
                     <div key={event.id} className={`flex items-start justify-between p-3.5 rounded-md border transition ${event.color}`}>
                       <div>
                         <span className="text-sm font-extrabold block">🎉 {event.title}</span>
