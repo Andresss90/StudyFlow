@@ -361,6 +361,10 @@ const formatLocalDate = (d: Date) =>
 export default function App() {
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  // Mientras Firebase restaura la sesión guardada del dispositivo, mostramos
+  // una pantalla de carga en vez del formulario de inicio de sesión, para que
+  // quien ya inició sesión antes no vea el login parpadear antes de entrar.
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState('');
@@ -474,6 +478,7 @@ export default function App() {
         setFirebaseUser(null);
         setUserProfile(null);
       }
+      setIsAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -1170,6 +1175,19 @@ export default function App() {
               <button onClick={() => setResetOobCode(null)} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-md shadow transition">Go to Sign In</button>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-black text-slate-900">StudyFlow</h1>
+          <div className="flex justify-center">
+            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          </div>
         </div>
       </div>
     );
