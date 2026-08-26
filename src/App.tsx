@@ -1053,7 +1053,7 @@ export default function App() {
 
     const { dayNum, hourIdx } = editingCell;
     const updatedSchedule = { ...schedule };
-    updatedSchedule[dayNum] = [...updatedSchedule[dayNum]];
+    updatedSchedule[dayNum] = updatedSchedule[dayNum] ? [...updatedSchedule[dayNum]] : new Array(7).fill('');
     updatedSchedule[dayNum][hourIdx] = subjectName;
 
     try {
