@@ -227,11 +227,11 @@ const SUBJECT_DETAILS: Record<string, { short: string; color: string }> = {
   'Social Studies': { short: 'CS', color: 'bg-[#757575]' },
   'Mandarin': { short: 'MN', color: 'bg-[#fb8c00]' },
   'Physics': { short: 'FIS', color: 'bg-[#546e7a]' },
+  'Robótica': { short: 'ROB', color: 'bg-[#7c4dff]' },
+  'Ética': { short: 'Éti', color: 'bg-[#e65100]' },
   'Character Counts': { short: 'CC', color: 'bg-transparent' },
   'Club': { short: 'CLB', color: 'bg-transparent' },
   'Arts': { short: 'ART', color: 'bg-transparent' },
-  'Robótica': { short: 'ROB', color: 'bg-[#7c4dff]' },
-  'Ética': { short: 'Éti', color: 'bg-[#e65100]' },
 };
 
 const AVAILABLE_SUBJECTS = Object.keys(SUBJECT_DETAILS);
