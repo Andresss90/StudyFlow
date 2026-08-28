@@ -962,7 +962,7 @@ export default function App() {
         }
       } else if (type === 'school') {
         if (userProfile.role === 'student') {
-          alert('Only teachers or representatives can create school tasks.');
+          alert('Only teachers or representatives can create class tasks.');
           return;
         }
 
@@ -1566,9 +1566,9 @@ export default function App() {
                     )}
 
                     <div className="flex-1 w-full flex flex-col items-center gap-3">
-                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">School Tasks</h3>
+                      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Class Tasks</h3>
                       {schoolTasks.filter(t => t.dateStr === selectedDayDetails.dateStr).length === 0 ? (
-                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-md text-center text-slate-400 text-sm w-full">No school tasks scheduled for this date.</div>
+                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-md text-center text-slate-400 text-sm w-full">No class tasks scheduled for this date.</div>
                       ) : (
                         <div className="space-y-2 w-full">
                           {schoolTasks.filter(t => t.dateStr === selectedDayDetails.dateStr).map(task => {
@@ -1746,10 +1746,10 @@ export default function App() {
             <>
             <div className="border-t pt-4">
               <div className="flex items-center gap-1.5 mb-3">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">School Tasks for Course ({activeCourse})</h3>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Class Tasks for Course ({activeCourse})</h3>
                 {renderInfoTip('schoolTasks', sectionInfoText.schoolTasks)}
               </div>
-              {sortedSchoolTasks.length === 0 ? <p className="text-slate-400 text-sm py-2">No school tasks published.</p> : (
+              {sortedSchoolTasks.length === 0 ? <p className="text-slate-400 text-sm py-2">No class tasks published.</p> : (
                 <div className="space-y-2">
                   {sortedSchoolTasks.map(task => {
                     const isDone = completedSchoolTaskIds.has(task.id);
