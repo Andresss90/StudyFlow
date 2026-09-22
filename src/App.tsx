@@ -1599,13 +1599,13 @@ export default function App() {
                     <div className="flex-1 w-full flex flex-col items-center gap-3">
                       <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Class Tasks</h3>
                       {schoolTasks.filter(t => t.dateStr === selectedDayDetails.dateStr).length === 0 ? (
-                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-slate-400 text-sm w-full">No class tasks scheduled for this date.</div>
+                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center text-slate-400 text-sm w-full">No class tasks scheduled for this date.</div>
                       ) : (
                         <div className="space-y-2 w-full">
                           {schoolTasks.filter(t => t.dateStr === selectedDayDetails.dateStr).map(task => {
                             const isDone = completedSchoolTaskIds.has(task.id);
                             return (
-                              <div key={task.id} className={`p-3.5 rounded-xl border text-sm font-semibold transition flex items-center justify-between ${task.color}`}>
+                              <div key={task.id} className={`p-3.5 rounded-2xl border text-sm font-semibold transition flex items-center justify-between ${task.color}`}>
                                 <div className="flex items-start gap-3">
                                   <input type="checkbox" checked={isDone} onChange={() => togglePersonalSchoolTask(task.id)} className="w-4 h-4 mt-0.5 text-indigo-600 rounded cursor-pointer shrink-0" />
                                   <div>
@@ -1623,11 +1623,11 @@ export default function App() {
                     <div className="flex-1 w-full flex flex-col items-center gap-3">
                       <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Personal Tasks</h3>
                       {personalToDos.filter(t => t.dateStr === selectedDayDetails.dateStr).length === 0 ? (
-                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-slate-400 text-sm w-full">No personal tasks scheduled for this date.</div>
+                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center text-slate-400 text-sm w-full">No personal tasks scheduled for this date.</div>
                       ) : (
                         <div className="space-y-2 w-full">
                           {personalToDos.filter(t => t.dateStr === selectedDayDetails.dateStr).map(task => (
-                            <div key={task.id} className={`p-3.5 rounded-xl border text-sm font-semibold transition flex items-center justify-between ${task.color}`}>
+                            <div key={task.id} className={`p-3.5 rounded-2xl border text-sm font-semibold transition flex items-center justify-between ${task.color}`}>
                               <div className="flex items-center gap-2">
                                 <input type="checkbox" checked={task.completed} onChange={() => togglePersonalToDo(task.id, task.completed)} className="w-4 h-4 text-indigo-600 rounded cursor-pointer" />
                                 <span className={task.completed ? 'line-through opacity-60' : ''}>{task.title}</span>
@@ -1754,7 +1754,7 @@ export default function App() {
               {sortedPersonalToDos.length === 0 ? <p className="text-slate-400 text-sm py-2">No personal tasks registered.</p> : (
                 <div className="space-y-2">
                   {sortedPersonalToDos.map(task => (
-                    <div key={task.id} className={`flex items-start justify-between p-3.5 rounded-xl border transition ${task.color}`}>
+                    <div key={task.id} className={`flex items-start justify-between p-3.5 rounded-2xl border transition ${task.color}`}>
                       <div className="flex items-start gap-3">
                         <input type="checkbox" checked={task.completed} onChange={() => togglePersonalToDo(task.id, task.completed)} className="w-5 h-5 mt-0.5 text-indigo-600 rounded cursor-pointer shrink-0" />
                         <div>
@@ -1785,7 +1785,7 @@ export default function App() {
                   {sortedSchoolTasks.map(task => {
                     const isDone = completedSchoolTaskIds.has(task.id);
                     return (
-                      <div key={task.id} className={`flex items-start justify-between p-3.5 rounded-xl border transition ${task.color}`}>
+                      <div key={task.id} className={`flex items-start justify-between p-3.5 rounded-2xl border transition ${task.color}`}>
                         <div className="flex items-start gap-3">
                           <input type="checkbox" checked={isDone} onChange={() => togglePersonalSchoolTask(task.id)} className="w-5 h-5 mt-0.5 text-indigo-600 rounded cursor-pointer shrink-0" />
                           <div>
@@ -1815,7 +1815,7 @@ export default function App() {
               {sortedSchoolEvents.length === 0 ? <p className="text-slate-400 text-sm py-2">No course events registered.</p> : (
                 <div className="space-y-2">
                   {sortedSchoolEvents.map(event => (
-                    <div key={event.id} className={`flex items-start justify-between p-3.5 rounded-xl border transition ${event.color}`}>
+                    <div key={event.id} className={`flex items-start justify-between p-3.5 rounded-2xl border transition ${event.color}`}>
                       <div>
                         <span className="text-sm font-extrabold block">🎉 {event.title}</span>
                         {event.description && <p className="text-xs opacity-80 mt-0.5">{event.description}</p>}
@@ -1841,7 +1841,7 @@ export default function App() {
               {displayedGeneralEvents.length === 0 ? <p className="text-slate-400 text-sm py-2">No general events for your course.</p> : (
                 <div className="space-y-2">
                   {displayedGeneralEvents.map(event => (
-                    <div key={event.id} className={`flex items-start justify-between p-3.5 rounded-xl border transition ${event.color}`}>
+                    <div key={event.id} className={`flex items-start justify-between p-3.5 rounded-2xl border transition ${event.color}`}>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-extrabold block">🎉 {event.title}</span>
