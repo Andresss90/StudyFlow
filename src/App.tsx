@@ -485,15 +485,29 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Carga inicial de datos, con reintentos cortos: justo después de un
+  // arranque en frío (la app estaba completamente cerrada), la primera
+  // llamada a Firestore a veces falla en silencio porque la conexión de red
+  // todavía se está estableciendo. En vez de dejar esas secciones vacías
+  // hasta que alguien le dé refrescar manualmente, reintentamos solo las que
+  // fallaron un par de veces más, así que en unos segundos se resuelve solo.
   useEffect(() => {
-    if (userProfile && firebaseUser) {
-      fetchSchoolTasks();
-      fetchSchoolEvents();
-      fetchPersonalToDos();
-      fetchCompletedSchoolTasks();
-      fetchSchedule();
-      fetchGeneralEventOverrides();
-    }
+    if (!(userProfile && firebaseUser)) return;
+    let cancelled = false;
+
+    const loadAll = async () => {
+      let pending = [fetchSchoolTasks, fetchSchoolEvents, fetchPersonalToDos, fetchCompletedSchoolTasks, fetchSchedule, fetchGeneralEventOverrides];
+      for (const delay of [0, 1200, 3000]) {
+        if (cancelled || pending.length === 0) return;
+        if (delay > 0) await new Promise(resolve => setTimeout(resolve, delay));
+        if (cancelled) return;
+        const results = await Promise.all(pending.map(fn => fn()));
+        pending = pending.filter((_, i) => results[i] === false);
+      }
+    };
+
+    loadAll();
+    return () => { cancelled = true; };
   }, [userProfile, firebaseUser]);
 
   // Sincronización silenciosa: trae datos frescos y revisa si hay una versión
@@ -679,7 +693,7 @@ export default function App() {
   };
 
   const fetchSchoolTasks = async () => {
-    if (!userProfile) return;
+    if (!userProfile) return false;
     try {
       const querySnapshot = await getDocs(collection(db, 'schoolTasks'));
       const tasks: Task[] = [];
@@ -696,13 +710,15 @@ export default function App() {
       }
       knownSchoolTaskIdsRef.current = newIds;
       setSchoolTasks(tasks);
+      return true;
     } catch (err) {
       console.error('Error fetching school tasks:', err);
+      return false;
     }
   };
 
   const fetchSchoolEvents = async () => {
-    if (!userProfile) return;
+    if (!userProfile) return false;
     try {
       const querySnapshot = await getDocs(collection(db, 'schoolEvents'));
       const events: Task[] = [];
@@ -719,13 +735,15 @@ export default function App() {
       }
       knownSchoolEventIdsRef.current = newIds;
       setSchoolEvents(events);
+      return true;
     } catch (err) {
       console.error('Error fetching school events:', err);
+      return false;
     }
   };
 
   const fetchPersonalToDos = async () => {
-    if (!firebaseUser) return;
+    if (!firebaseUser) return false;
     try {
       const querySnapshot = await getDocs(collection(db, `users/${firebaseUser.uid}/personalTodos`));
       const todos: Task[] = [];
@@ -733,13 +751,15 @@ export default function App() {
         todos.push({ ...(docSnap.data() as Task), id: docSnap.id, isPersonal: true, isEvent: false });
       });
       setPersonalToDos(todos);
+      return true;
     } catch (err) {
       console.error('Error fetching personal tasks:', err);
+      return false;
     }
   };
 
   const fetchCompletedSchoolTasks = async () => {
-    if (!firebaseUser) return;
+    if (!firebaseUser) return false;
     try {
       const querySnapshot = await getDocs(collection(db, `users/${firebaseUser.uid}/completedSchoolTasks`));
       const completedIds = new Set<string>();
@@ -747,8 +767,10 @@ export default function App() {
         completedIds.add(docSnap.id);
       });
       setCompletedSchoolTaskIds(completedIds);
+      return true;
     } catch (err) {
       console.error('Error fetching completed school tasks:', err);
+      return false;
     }
   };
 
@@ -778,7 +800,7 @@ export default function App() {
   };
 
   const fetchSchedule = async () => {
-    if (!userProfile || !firebaseUser) return;
+    if (!userProfile || !firebaseUser) return false;
     try {
       const targetDocId = userProfile.courseId === MY_FLOW_ID ? `myflow_${firebaseUser.uid}` : (userProfile.courseId || '10B');
       const docRef = doc(db, 'schedules', targetDocId);
@@ -790,13 +812,15 @@ export default function App() {
         // en vez de dejar en pantalla el horario del curso que se veía antes.
         setSchedule({});
       }
+      return true;
     } catch (err) {
       console.error('Error fetching schedule:', err);
+      return false;
     }
   };
 
   const fetchGeneralEventOverrides = async () => {
-    if (!userProfile) return;
+    if (!userProfile) return false;
     try {
       const querySnapshot = await getDocs(collection(db, 'generalEventOverrides'));
       const userCourse = userProfile.courseId || '10B';
@@ -813,8 +837,10 @@ export default function App() {
       }
       knownGeneralOverrideIdsRef.current = newIds;
       setGeneralEventOverrides(overrides);
+      return true;
     } catch (err) {
       console.error('Error fetching general event overrides:', err);
+      return false;
     }
   };
 
@@ -847,6 +873,7 @@ export default function App() {
 
     try {
       await setDoc(doc(db, 'generalEventOverrides', overrideId), overrideData);
+      knownGeneralOverrideIdsRef.current?.add(editingGeneralEvent.id);
       setGeneralEventOverrides(prev => ({ ...prev, [editingGeneralEvent.id]: overrideData }));
       setEditingGeneralEvent(null);
     } catch (err: any) {
@@ -861,6 +888,7 @@ export default function App() {
     const overrideData: GeneralEventOverride = { baseEventId: evt.id, courseId: targetCourse, deleted: true };
     try {
       await setDoc(doc(db, 'generalEventOverrides', overrideId), overrideData);
+      knownGeneralOverrideIdsRef.current?.add(evt.id);
       setGeneralEventOverrides(prev => ({ ...prev, [evt.id]: overrideData }));
     } catch (err) {
       console.error('Error hiding general event:', err);
@@ -873,6 +901,7 @@ export default function App() {
     const overrideId = `${targetCourse}__${evt.id}`;
     try {
       await deleteDoc(doc(db, 'generalEventOverrides', overrideId));
+      knownGeneralOverrideIdsRef.current?.delete(evt.id);
       setGeneralEventOverrides(prev => {
         const copy = { ...prev };
         delete copy[evt.id];
@@ -940,7 +969,7 @@ export default function App() {
     } else {
       if (type === 'event') {
         if (userProfile.role === 'student') {
-          alert('Only teachers or representatives can create school events.');
+          alert('Only teachers or representatives can create course events.');
           return;
         }
 
@@ -955,6 +984,7 @@ export default function App() {
 
         try {
           const docRef = await addDoc(collection(db, 'schoolEvents'), newEventData);
+          knownSchoolEventIdsRef.current?.add(docRef.id);
           setSchoolEvents([...schoolEvents, { ...newEventData, id: docRef.id, isEvent: true, isPersonal: false }]);
           setIsTaskModalOpen(false);
         } catch (err: any) {
@@ -977,6 +1007,7 @@ export default function App() {
 
         try {
           const docRef = await addDoc(collection(db, 'schoolTasks'), newTaskData);
+          knownSchoolTaskIdsRef.current?.add(docRef.id);
           setSchoolTasks([...schoolTasks, { ...newTaskData, id: docRef.id, isPersonal: false, isEvent: false }]);
           setIsTaskModalOpen(false);
         } catch (err: any) {
@@ -1568,13 +1599,13 @@ export default function App() {
                     <div className="flex-1 w-full flex flex-col items-center gap-3">
                       <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Class Tasks</h3>
                       {schoolTasks.filter(t => t.dateStr === selectedDayDetails.dateStr).length === 0 ? (
-                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-md text-center text-slate-400 text-sm w-full">No class tasks scheduled for this date.</div>
+                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-slate-400 text-sm w-full">No class tasks scheduled for this date.</div>
                       ) : (
                         <div className="space-y-2 w-full">
                           {schoolTasks.filter(t => t.dateStr === selectedDayDetails.dateStr).map(task => {
                             const isDone = completedSchoolTaskIds.has(task.id);
                             return (
-                              <div key={task.id} className={`p-3.5 rounded-md border text-sm font-semibold transition flex items-center justify-between ${task.color}`}>
+                              <div key={task.id} className={`p-3.5 rounded-xl border text-sm font-semibold transition flex items-center justify-between ${task.color}`}>
                                 <div className="flex items-start gap-3">
                                   <input type="checkbox" checked={isDone} onChange={() => togglePersonalSchoolTask(task.id)} className="w-4 h-4 mt-0.5 text-indigo-600 rounded cursor-pointer shrink-0" />
                                   <div>
@@ -1592,11 +1623,11 @@ export default function App() {
                     <div className="flex-1 w-full flex flex-col items-center gap-3">
                       <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Personal Tasks</h3>
                       {personalToDos.filter(t => t.dateStr === selectedDayDetails.dateStr).length === 0 ? (
-                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-md text-center text-slate-400 text-sm w-full">No personal tasks scheduled for this date.</div>
+                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-slate-400 text-sm w-full">No personal tasks scheduled for this date.</div>
                       ) : (
                         <div className="space-y-2 w-full">
                           {personalToDos.filter(t => t.dateStr === selectedDayDetails.dateStr).map(task => (
-                            <div key={task.id} className={`p-3.5 rounded-md border text-sm font-semibold transition flex items-center justify-between ${task.color}`}>
+                            <div key={task.id} className={`p-3.5 rounded-xl border text-sm font-semibold transition flex items-center justify-between ${task.color}`}>
                               <div className="flex items-center gap-2">
                                 <input type="checkbox" checked={task.completed} onChange={() => togglePersonalToDo(task.id, task.completed)} className="w-4 h-4 text-indigo-600 rounded cursor-pointer" />
                                 <span className={task.completed ? 'line-through opacity-60' : ''}>{task.title}</span>
@@ -1717,13 +1748,13 @@ export default function App() {
           <div className="space-y-6">
             <div>
               <div className="flex items-center gap-1.5 mb-3">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">My Personal Tasks (To-Do List)</h3>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">My Personal Tasks</h3>
                 {renderInfoTip('personal', sectionInfoText.personal)}
               </div>
               {sortedPersonalToDos.length === 0 ? <p className="text-slate-400 text-sm py-2">No personal tasks registered.</p> : (
                 <div className="space-y-2">
                   {sortedPersonalToDos.map(task => (
-                    <div key={task.id} className={`flex items-start justify-between p-3.5 rounded-md border transition ${task.color}`}>
+                    <div key={task.id} className={`flex items-start justify-between p-3.5 rounded-xl border transition ${task.color}`}>
                       <div className="flex items-start gap-3">
                         <input type="checkbox" checked={task.completed} onChange={() => togglePersonalToDo(task.id, task.completed)} className="w-5 h-5 mt-0.5 text-indigo-600 rounded cursor-pointer shrink-0" />
                         <div>
@@ -1746,7 +1777,7 @@ export default function App() {
             <>
             <div className="border-t pt-4">
               <div className="flex items-center gap-1.5 mb-3">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Class Tasks for Course ({activeCourse})</h3>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tasks for Course ({activeCourse})</h3>
                 {renderInfoTip('schoolTasks', sectionInfoText.schoolTasks)}
               </div>
               {sortedSchoolTasks.length === 0 ? <p className="text-slate-400 text-sm py-2">No class tasks published.</p> : (
@@ -1754,7 +1785,7 @@ export default function App() {
                   {sortedSchoolTasks.map(task => {
                     const isDone = completedSchoolTaskIds.has(task.id);
                     return (
-                      <div key={task.id} className={`flex items-start justify-between p-3.5 rounded-md border transition ${task.color}`}>
+                      <div key={task.id} className={`flex items-start justify-between p-3.5 rounded-xl border transition ${task.color}`}>
                         <div className="flex items-start gap-3">
                           <input type="checkbox" checked={isDone} onChange={() => togglePersonalSchoolTask(task.id)} className="w-5 h-5 mt-0.5 text-indigo-600 rounded cursor-pointer shrink-0" />
                           <div>
@@ -1778,13 +1809,13 @@ export default function App() {
 
             <div className="border-t pt-4">
               <div className="flex items-center gap-1.5 mb-3">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">School Events</h3>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Course Events</h3>
                 {renderInfoTip('schoolEvents', sectionInfoText.schoolEvents)}
               </div>
-              {sortedSchoolEvents.length === 0 ? <p className="text-slate-400 text-sm py-2">No school events registered.</p> : (
+              {sortedSchoolEvents.length === 0 ? <p className="text-slate-400 text-sm py-2">No course events registered.</p> : (
                 <div className="space-y-2">
                   {sortedSchoolEvents.map(event => (
-                    <div key={event.id} className={`flex items-start justify-between p-3.5 rounded-md border transition ${event.color}`}>
+                    <div key={event.id} className={`flex items-start justify-between p-3.5 rounded-xl border transition ${event.color}`}>
                       <div>
                         <span className="text-sm font-extrabold block">🎉 {event.title}</span>
                         {event.description && <p className="text-xs opacity-80 mt-0.5">{event.description}</p>}
@@ -1810,7 +1841,7 @@ export default function App() {
               {displayedGeneralEvents.length === 0 ? <p className="text-slate-400 text-sm py-2">No general events for your course.</p> : (
                 <div className="space-y-2">
                   {displayedGeneralEvents.map(event => (
-                    <div key={event.id} className={`flex items-start justify-between p-3.5 rounded-md border transition ${event.color}`}>
+                    <div key={event.id} className={`flex items-start justify-between p-3.5 rounded-xl border transition ${event.color}`}>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-extrabold block">🎉 {event.title}</span>
