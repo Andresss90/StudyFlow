@@ -1710,13 +1710,11 @@ export default function App() {
                       <div className="space-y-1 min-w-0">
                         {combinedTasks.slice(0, 2).map(task => (
                           <div key={task.id} className={`px-2 py-0.5 rounded-md text-[10px] font-medium leading-tight border truncate flex items-center gap-1 ${dayEvent ? 'bg-white/80 text-slate-800' : task.color}`}>
-                            <span className="font-bold text-[9px] uppercase tracking-wider">{task.isPersonal ? '•' : 'S:'}</span>
                             <span className={task.isDone ? 'line-through opacity-60' : ''}>{task.title}</span>
                           </div>
                         ))}
                         {combinedTasks[2] && (
                           <div key={combinedTasks[2].id} className={`hidden md:flex px-2 py-0.5 rounded-md text-[10px] font-medium leading-tight border truncate items-center gap-1 ${dayEvent ? 'bg-white/80 text-slate-800' : combinedTasks[2].color}`}>
-                            <span className="font-bold text-[9px] uppercase tracking-wider">{combinedTasks[2].isPersonal ? '•' : 'S:'}</span>
                             <span className={combinedTasks[2].isDone ? 'line-through opacity-60' : ''}>{combinedTasks[2].title}</span>
                           </div>
                         )}
